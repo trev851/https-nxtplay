@@ -1,4 +1,4 @@
-// NXTPLAY – Stremio addon with live Netflix, Prime Video, Disney+ and HBO Max catalogs (movies + TV) using TMDB.
+// NXTPLAY – Stremio addon with live Netflix, Prime Video, Disney+, Starz, Cinemax, HBO Max and other catalogs (movies + TV) using TMDB.
 // No dependencies. Needs Node 18+. Env: TMDB_API_KEY (required), REGION (default US), PORT (set by Render), PROVIDER_<ID> (optional), FALLBACK_REGION (default US).
 const http = require("http");
 
@@ -15,7 +15,9 @@ const SERVICES = [
   { id: "netflix", label: "Netflix",     names: ["Netflix"],                fallback: 8 },
   { id: "prime",   label: "Prime Video", names: ["Amazon Prime Video"],     fallback: 9 },
   { id: "disney",  label: "Disney+",     names: ["Disney Plus", "Disney+"], fallback: 337 },
-  { id: "hbo",     label: "HBO Max",     names: ["HBO Max", "Max"],         fallback: 1899 },
+  { id: "starz",   label: "Starz",       names: ["Starz"],                  fallback: 43 },
+  { id: "cinemax", label: "Cinemax",     names: ["Cinemax"],                fallback: 157 },
+  { id: "hbo",     label: "HBO Max",     names: ["HBO", "HBO Max", "Max"], fallback: 1899 },
   { id: "hulu",    label: "Hulu",        names: ["Hulu"],                   fallback: 15 },
   { id: "paramount", label: "Paramount+", names: ["Paramount Plus", "Paramount+"], match: /paramount/i, fallback: 531 },
   { id: "apple",   label: "Apple TV+",   names: ["Apple TV Plus", "Apple TV+", "Apple TV"], fallback: 350 }
@@ -28,9 +30,9 @@ const extraFor = genres => [{ name: "genre", options: genres, isRequired: false 
 
 const manifest = {
   id: "community.nxtplay.all",
-  version: "1.7.1",
+  version: "1.8.0",
   name: "NXTPLAY",
-  description: `Netflix, Prime Video, Disney+, HBO Max, Hulu, Paramount+ and Apple TV+ movies and TV shows (${REGION})`,
+  description: `Netflix, Prime Video, Disney+, Starz, Cinemax, HBO Max, Hulu, Paramount+ and Apple TV+ movies and TV shows (${REGION})`,
   resources: ["catalog", "meta"],
   idPrefixes: ["tt"],
   types: ["movie", "series"],
@@ -115,7 +117,13 @@ const toMeta = async (tmdbType, stremioType, t, requireProvider, region = REGION
     background: d.backdrop_path ? "https://image.tmdb.org/t/p/w780" + d.backdrop_path : undefined,
     description: d.overview || undefined,
     releaseInfo: date.slice(0, 4) || undefined,
-    genres: (d.genres || []).map(g => g.name)
+    genres: (d.genres || []).map(g => g.name),
+    behaviorHints: {
+      autoplay: {
+        nextEpisodeAutoPlay: true,
+        nextSeasonAutoPlay: true
+      }
+    }
   };
 };
 
@@ -196,7 +204,13 @@ const getMetaFull = async (type, imdb) => {
     runtime: mins ? `${mins} min` : undefined,
     genres: (d.genres || []).map(g => g.name),
     cast: (d.credits?.cast || []).slice(0, 10).map(c => c.name),
-    director: type === "movie" ? crew.filter(c => c.job === "Director").map(c => c.name) : undefined
+    director: type === "movie" ? crew.filter(c => c.job === "Director").map(c => c.name) : undefined,
+    behaviorHints: {
+      autoplay: {
+        nextEpisodeAutoPlay: true,
+        nextSeasonAutoPlay: true
+      }
+    }
   };
   if (type === "series") {
     const seasons = (d.seasons || []).filter(x => x.season_number > 0 && x.episode_count > 0);
@@ -236,7 +250,7 @@ const parseExtra = str => {
 http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, "");
   let path = req.url.split("?")[0].replace(/^\/v\d+(?=\/)/, ""); // /v2/manifest.json works like /manifest.json
-  const scope = (path.match(/^\/(netflix|prime|disney|hbo|hulu|paramount|apple|all)(?=\/)/) || [])[1]; // /prime/manifest.json = Prime Video only
+  const scope = (path.match(/^\/(netflix|prime|disney|starz|cinemax|hbo|hulu|paramount|apple|all)(?=\/)/) || [])[1]; // /prime/manifest.json = Prime Video only
   if (scope) path = path.slice(scope.length + 1);
   try {
     if (path === "/health") return send(res, 200, { ok: true, version: manifest.version, tmdbKey: Boolean(KEY), region: REGION });
@@ -263,8 +277,8 @@ http.createServer(async (req, res) => {
       return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NXTPLAY</title>
 <body style="font-family:system-ui;background:#0f1226;color:#f3f1ee;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center">
 <div><h1>NXTPLAY</h1><p>Streaming catalogs for Stremio (${REGION}). Tap one to install it.</p>
-${[...SERVICES, { id: "all", label: "All services" }].map(x => `<p><a style="display:inline-block;min-width:240px;background:#ffb020;color:#241800;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700" href="stremio://${host}/${x.id}/manifest.json">${x.label}</a></p>`).join("")}
-<p style="color:#a4a8c9">Or paste https://${host}/prime/manifest.json (or /netflix, /disney, /hbo, /hulu, /paramount, /apple, /all) into Stremio's addon search.</p></div></body>`, "text/html");
+${[...SERVICES, { id: "all", label: "All services" }].map(x => `<p><a style="display:inline-block;min-width:240px;background:#ffb020;color:#241800;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700" href="/v3/${x.id}/manifest.json">Install ${x.label}</a></p>`).join("")}
+<p style="color:#a4a8c9">Or paste https://${host}/prime/manifest.json (or /netflix, /disney, /starz, /cinemax, /hbo, /hulu, /paramount, /apple, /all) into Stremio's addon search.</p></div></body>`, "text/html");
     }
     send(res, 404, { error: "Not found" });
   } catch (e) {
