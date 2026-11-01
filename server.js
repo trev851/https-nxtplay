@@ -27,6 +27,9 @@ const MOVIE_GENRES = ["Action","Adventure","Animation","Comedy","Crime","Documen
 const TV_GENRES = ["Action & Adventure","Animation","Comedy","Crime","Documentary","Drama","Family","Kids","Mystery","Reality","Sci-Fi & Fantasy","Soap","Talk","War & Politics","Western"];
 
 const extraFor = genres => [{ name: "genre", options: genres, isRequired: false }, { name: "search", isRequired: false }, { name: "skip", isRequired: false }];
+const autoplayHints = Object.freeze({
+  autoplay: { nextEpisodeAutoPlay: true, nextSeasonAutoPlay: true }
+});
 
 const manifest = {
   id: "community.nxtplay.all",
@@ -40,7 +43,7 @@ const manifest = {
     { type: "movie",  id: s.id, name: `${s.label} Movies`,   extra: extraFor(MOVIE_GENRES) },
     { type: "series", id: s.id, name: `${s.label} TV Shows`, extra: extraFor(TV_GENRES) }
   ]),
-  behaviorHints: { configurable: false }
+  behaviorHints: { configurable: false, ...autoplayHints }
 };
 
 // ---- tiny TTL cache ----
@@ -118,12 +121,7 @@ const toMeta = async (tmdbType, stremioType, t, requireProvider, region = REGION
     description: d.overview || undefined,
     releaseInfo: date.slice(0, 4) || undefined,
     genres: (d.genres || []).map(g => g.name),
-    behaviorHints: {
-      autoplay: {
-        nextEpisodeAutoPlay: true,
-        nextSeasonAutoPlay: true
-      }
-    }
+    ...autoplayHints
   };
 };
 
@@ -205,12 +203,7 @@ const getMetaFull = async (type, imdb) => {
     genres: (d.genres || []).map(g => g.name),
     cast: (d.credits?.cast || []).slice(0, 10).map(c => c.name),
     director: type === "movie" ? crew.filter(c => c.job === "Director").map(c => c.name) : undefined,
-    behaviorHints: {
-      autoplay: {
-        nextEpisodeAutoPlay: true,
-        nextSeasonAutoPlay: true
-      }
-    }
+    ...autoplayHints
   };
   if (type === "series") {
     const seasons = (d.seasons || []).filter(x => x.season_number > 0 && x.episode_count > 0);
