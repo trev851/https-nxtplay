@@ -114,8 +114,13 @@ const toMeta = async (tmdbType, stremioType, t, requireProvider, region = REGION
     if (!flat.some(p => requireProvider.includes(p.provider_id))) return null;
   }
   const date = d.release_date || d.first_air_date || "";
+  const title = d.title || d.name;
   return {
-    id: imdb, type: stremioType, name: d.title || d.name,
+    id: imdb,
+    imdb_id: imdb,
+    title,
+    name: title,
+    type: stremioType,
     poster: d.poster_path ? "https://image.tmdb.org/t/p/w342" + d.poster_path : `https://images.metahub.space/poster/medium/${imdb}/img`,
     background: d.backdrop_path ? "https://image.tmdb.org/t/p/w780" + d.backdrop_path : undefined,
     description: d.overview || undefined,
@@ -190,10 +195,15 @@ const getMetaFull = async (type, imdb) => {
   const d = await tmdb(`/${tmdbType}/${hit.id}`, { append_to_response: "credits" });
   if (!d) return null;
   const date = d.release_date || d.first_air_date || "";
+  const title = d.title || d.name;
   const crew = d.credits?.crew || [];
   const mins = d.runtime || d.episode_run_time?.[0];
   const meta = {
-    id: imdb, type, name: d.title || d.name,
+    id: imdb,
+    imdb_id: imdb,
+    title,
+    name: title,
+    type,
     poster: d.poster_path ? "https://image.tmdb.org/t/p/w500" + d.poster_path : `https://images.metahub.space/poster/medium/${imdb}/img`,
     background: d.backdrop_path ? "https://image.tmdb.org/t/p/w1280" + d.backdrop_path : undefined,
     description: d.overview || undefined,
