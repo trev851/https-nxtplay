@@ -267,11 +267,25 @@ http.createServer(async (req, res) => {
     }
     if (path === "/") {
       const host = req.headers["x-forwarded-host"] || req.headers.host;
+      const cards = [...SERVICES, { id: "all", label: "All services" }].map(s => `
+        <div style="margin:10px 0">
+          <a href="/v3/${s.id}/manifest.json" style="display:inline-block;min-width:260px;padding:14px 18px;border-radius:12px;background:#ffb020;color:#1d1200;font-weight:700;text-decoration:none;box-shadow:0 8px 20px rgba(255,176,32,0.25)">
+            Install ${s.label}
+          </a>
+        </div>`).join("");
       return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NXTPLAY</title>
-<body style="font-family:system-ui;background:#0f1226;color:#f3f1ee;display:grid;place-items:center;min-height:100vh;margin:0;text-align:center">
-<div><h1>NXTPLAY</h1><p>Streaming catalogs for Stremio (${REGION}). Tap one to install it.</p>
-${[...SERVICES, { id: "all", label: "All services" }].map(x => `<p><a style="display:inline-block;min-width:240px;background:#ffb020;color:#241800;padding:12px 22px;border-radius:10px;text-decoration:none;font-weight:700" href="/v3/${x.id}/manifest.json">Install ${x.label}</a></p>`).join("")}
-<p style="color:#a4a8c9">Or paste https://${host}/prime/manifest.json (or /netflix, /disney, /starz, /cinemax, /hbo, /hulu, /paramount, /apple, /all) into Stremio's addon search.</p></div></body>`, "text/html");
+<body style="font-family:system-ui;background:radial-gradient(circle at top,#1c2242,#0f1226 42%);color:#f3f1ee;display:grid;place-items:center;min-height:100vh;margin:0">
+<div style="width:min(760px,92vw);text-align:center;padding:32px 22px">
+  <h1 style="margin:0 0 12px;font-size:clamp(2.2rem,5vw,3.5rem)">NXTPLAY</h1>
+  <p style="margin:0 0 20px;color:#dfe6ff;font-size:1.1rem">Streaming catalogs for Stremio (${REGION}) with autoplay-ready metadata.</p>
+  <p style="margin:0 0 22px;color:#b8bfdc">Includes Netflix, Prime Video, Disney+, Starz, Cinemax, HBO Max, Hulu, Paramount+, and Apple TV+.</p>
+  ${cards}
+  <p style="margin-top:26px;color:#a4a8c9;line-height:1.6">
+    Or paste <code style="color:#f7d68d">https://${host}/prime/manifest.json</code><br>
+    into Stremio's addon search, or use /netflix, /disney, /starz, /cinemax, /hbo, /hulu, /paramount, /apple, or /all.
+  </p>
+</div>
+</body>`, "text/html");
     }
     send(res, 404, { error: "Not found" });
   } catch (e) {
