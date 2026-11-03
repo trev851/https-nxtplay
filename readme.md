@@ -1,1 +1,1 @@
-just a movie and tv shows catalog 
+just a movie and tv shows catalog for stremio https://https-nxtplay.onrender.com/v3/all/manifest.json
