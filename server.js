@@ -25,7 +25,6 @@ const SERVICES = [
   { id: "amcplus", label: "AMC+", names: ["AMC+", "AMC Plus"] },
   { id: "freevee", label: "Freevee (IMDb TV)", names: ["Freevee", "Amazon Freevee", "IMDb TV"] },
   { id: "cartoonnetwork", label: "Cartoon Network", networkId: 56, types: ["series"] },
-  { id: "disneyjunior", label: "Disney Junior", networkId: 1907, types: ["series"] },
   { id: "boomerang", label: "Boomerang", networkId: 435, types: ["series"] },
   { id: "nickjr", label: "Nick Jr.", networkId: 184, types: ["series"] },
   { id: "adultswim", label: "Adult Swim", networkId: 80, types: ["series"] }
@@ -36,7 +35,7 @@ const extraFor = genres => [{ name: "genre", options: genres, isRequired: false 
 const autoplayHints = Object.freeze({ autoplay: { nextEpisodeAutoPlay: true, nextSeasonAutoPlay: true } });
 const serviceTypes = s => s.types || ["movie", "series"];
 const manifest = {
-  id: "community.nxtplay.all", version: "2.2.0", name: "NXTPLAY",
+  id: "community.nxtplay.all", version: "2.3.0", name: "NXTPLAY",
   description: `Streaming services and TV network catalogs (${REGION})`,
   resources: ["catalog", "meta"], idPrefixes: ["tt"], types: ["movie", "series"],
   catalogs: SERVICES.flatMap(s => serviceTypes(s).map(type => ({ type, id: s.id, name: `${s.label} ${type === "movie" ? "Movies" : "TV Shows"}`, extra: extraFor(type === "movie" ? MOVIE_GENRES : TV_GENRES) }))),
@@ -169,7 +168,7 @@ const parseExtra = str => {
 http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, "");
   let path = req.url.split("?")[0].replace(/^\/v\d+(?=\/)/, "");
-  const scope = (path.match(/^\/(netflix|prime|disney|starz|cinemax|hbo|hulu|paramount|apple|crunchyroll|lifetime|hallmark|amcplus|freevee|cartoonnetwork|disneyjunior|boomerang|nickjr|adultswim|all)(?=\/)/) || [])[1];
+  const scope = (path.match(/^\/(netflix|prime|disney|starz|cinemax|hbo|hulu|paramount|apple|crunchyroll|lifetime|hallmark|amcplus|freevee|cartoonnetwork|boomerang|nickjr|adultswim|all)(?=\/)/) || [])[1];
   if (scope) path = path.slice(scope.length + 1);
   try {
     if (path === "/health") return send(res, 200, { ok: true, version: manifest.version, tmdbKey: Boolean(KEY), region: REGION });
