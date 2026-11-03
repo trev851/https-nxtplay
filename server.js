@@ -20,12 +20,12 @@ const SERVICES = [
   { id: "paramount", label: "Paramount+", names: ["Paramount Plus", "Paramount+"], match: /paramount/i, fallback: 531 },
   { id: "apple", label: "Apple TV+", names: ["Apple TV Plus", "Apple TV+", "Apple TV"], fallback: 350 },
   { id: "crunchyroll", label: "Crunchyroll", names: ["Crunchyroll"], fallback: 283 },
-  { id: "lifetime", label: "Lifetime Movie Club", names: ["Lifetime Movie Club"], fallback: 318 },
+  { id: "lifetime", label: "Lifetime Movie Club", names: ["Lifetime Movie Club"], fallback: 318, networkIds: { series: 34 } },
   { id: "hallmark", label: "Hallmark", names: ["Hallmark Movies Now", "Hallmark TV", "Hallmark+"], match: /hallmark/i },
   { id: "amcplus", label: "AMC+", names: ["AMC+", "AMC Plus"] },
   { id: "freevee", label: "Freevee (IMDb TV)", names: ["Freevee", "Amazon Freevee", "IMDb TV"] },
   { id: "cartoonnetwork", label: "Cartoon Network", networkId: 56, types: ["series"] },
-  { id: "disneyjunior", label: "Disney Junior", networkId: 89, types: ["series"] },
+  { id: "disneyjunior", label: "Disney Junior", networkId: 2076, types: ["series"] },
   { id: "boomerang", label: "Boomerang", networkId: 435, types: ["series"] },
   { id: "nickjr", label: "Nick Jr.", networkId: 184, types: ["series"] },
   { id: "adultswim", label: "Adult Swim", networkId: 80, types: ["series"] }
@@ -36,7 +36,7 @@ const extraFor = genres => [{ name: "genre", options: genres, isRequired: false 
 const autoplayHints = Object.freeze({ autoplay: { nextEpisodeAutoPlay: true, nextSeasonAutoPlay: true } });
 const serviceTypes = s => s.types || ["movie", "series"];
 const manifest = {
-  id: "community.nxtplay.all", version: "2.1.0", name: "NXTPLAY",
+  id: "community.nxtplay.all", version: "2.2.0", name: "NXTPLAY",
   description: `Streaming services and TV network catalogs (${REGION})`,
   resources: ["catalog", "meta"], idPrefixes: ["tt"], types: ["movie", "series"],
   catalogs: SERVICES.flatMap(s => serviceTypes(s).map(type => ({ type, id: s.id, name: `${s.label} ${type === "movie" ? "Movies" : "TV Shows"}`, extra: extraFor(type === "movie" ? MOVIE_GENRES : TV_GENRES) }))),
@@ -106,15 +106,16 @@ const toMeta = async (tmdbType, type, item, requireProvider, region = REGION) =>
 };
 const regionsToTry = () => FALLBACK_REGION && FALLBACK_REGION !== "NONE" && FALLBACK_REGION !== REGION ? [REGION, FALLBACK_REGION] : [REGION];
 const catalogFor = async (svc, type, tmdbType, extra, region) => {
-  const providers = svc.networkId ? [] : await providerIds(svc, region);
+  const networkId = svc.networkIds?.[type] || (type === "series" ? svc.networkId : undefined);
+  const providers = networkId ? [] : await providerIds(svc, region);
   if (extra.search) {
     const result = await tmdb(`/search/${tmdbType}`, { query: extra.search });
     return (await pool((result?.results || []).slice(0, 20), 8, item => toMeta(tmdbType, type, item, null, region))).filter(Boolean);
   }
   const skip = Math.max(0, parseInt(extra.skip, 10) || 0);
   const first = Math.floor(skip / PAGE) + 1;
-  const params = svc.networkId
-    ? { with_networks: svc.networkId, sort_by: "popularity.desc" }
+  const params = networkId
+    ? { with_networks: networkId, sort_by: "popularity.desc" }
     : { with_watch_providers: providers.join("|"), watch_region: region, with_watch_monetization_types: "flatrate", sort_by: "popularity.desc" };
   if (extra.genre) { const gid = (await genreIds(tmdbType))[extra.genre]; if (gid) params.with_genres = gid; }
   const pages = await Promise.all(Array.from({ length: PAGES_PER_REQUEST }, (_, i) => tmdb(`/discover/${tmdbType}`, { ...params, page: first + i })));
