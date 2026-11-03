@@ -8,8 +8,7 @@ const PORT = process.env.PORT || 7000;
 const PAGE = 20;
 const PAGES_PER_REQUEST = 2;
 
-// Cartoon Network is a TMDB TV network, not a streaming provider; its catalog is series-only.
-// Provider services are resolved from TMDB by name in the selected region.
+// Network catalogs are TV-series-only. Streaming services are resolved from TMDB by name per region.
 const SERVICES = [
   { id: "netflix", label: "Netflix", names: ["Netflix"], fallback: 8 },
   { id: "prime", label: "Prime Video", names: ["Amazon Prime Video"], fallback: 9 },
@@ -23,7 +22,13 @@ const SERVICES = [
   { id: "crunchyroll", label: "Crunchyroll", names: ["Crunchyroll"], fallback: 283 },
   { id: "lifetime", label: "Lifetime Movie Club", names: ["Lifetime Movie Club"], fallback: 318 },
   { id: "hallmark", label: "Hallmark", names: ["Hallmark Movies Now", "Hallmark TV", "Hallmark+"], match: /hallmark/i },
-  { id: "cartoonnetwork", label: "Cartoon Network", networkId: 56, types: ["series"] }
+  { id: "amcplus", label: "AMC+", names: ["AMC+", "AMC Plus"] },
+  { id: "freevee", label: "Freevee (IMDb TV)", names: ["Freevee", "Amazon Freevee", "IMDb TV"] },
+  { id: "cartoonnetwork", label: "Cartoon Network", networkId: 56, types: ["series"] },
+  { id: "disneyjunior", label: "Disney Junior", networkId: 89, types: ["series"] },
+  { id: "boomerang", label: "Boomerang", networkId: 435, types: ["series"] },
+  { id: "nickjr", label: "Nick Jr.", networkId: 184, types: ["series"] },
+  { id: "adultswim", label: "Adult Swim", networkId: 80, types: ["series"] }
 ];
 const MOVIE_GENRES = ["Action","Adventure","Animation","Comedy","Crime","Documentary","Drama","Family","Fantasy","History","Horror","Music","Mystery","Romance","Science Fiction","Thriller","War","Western"];
 const TV_GENRES = ["Action & Adventure","Animation","Comedy","Crime","Documentary","Drama","Family","Kids","Mystery","Reality","Sci-Fi & Fantasy","Soap","Talk","War & Politics","Western"];
@@ -31,8 +36,8 @@ const extraFor = genres => [{ name: "genre", options: genres, isRequired: false 
 const autoplayHints = Object.freeze({ autoplay: { nextEpisodeAutoPlay: true, nextSeasonAutoPlay: true } });
 const serviceTypes = s => s.types || ["movie", "series"];
 const manifest = {
-  id: "community.nxtplay.all", version: "2.0.0", name: "NXTPLAY",
-  description: `Streaming catalogs including Crunchyroll, Lifetime, Hallmark and Cartoon Network (${REGION})`,
+  id: "community.nxtplay.all", version: "2.1.0", name: "NXTPLAY",
+  description: `Streaming services and TV network catalogs (${REGION})`,
   resources: ["catalog", "meta"], idPrefixes: ["tt"], types: ["movie", "series"],
   catalogs: SERVICES.flatMap(s => serviceTypes(s).map(type => ({ type, id: s.id, name: `${s.label} ${type === "movie" ? "Movies" : "TV Shows"}`, extra: extraFor(type === "movie" ? MOVIE_GENRES : TV_GENRES) }))),
   behaviorHints: { configurable: false, ...autoplayHints }
@@ -163,7 +168,7 @@ const parseExtra = str => {
 http.createServer(async (req, res) => {
   if (req.method === "OPTIONS") return send(res, 204, "");
   let path = req.url.split("?")[0].replace(/^\/v\d+(?=\/)/, "");
-  const scope = (path.match(/^\/(netflix|prime|disney|starz|cinemax|hbo|hulu|paramount|apple|crunchyroll|lifetime|hallmark|cartoonnetwork|all)(?=\/)/) || [])[1];
+  const scope = (path.match(/^\/(netflix|prime|disney|starz|cinemax|hbo|hulu|paramount|apple|crunchyroll|lifetime|hallmark|amcplus|freevee|cartoonnetwork|disneyjunior|boomerang|nickjr|adultswim|all)(?=\/)/) || [])[1];
   if (scope) path = path.slice(scope.length + 1);
   try {
     if (path === "/health") return send(res, 200, { ok: true, version: manifest.version, tmdbKey: Boolean(KEY), region: REGION });
@@ -178,8 +183,8 @@ http.createServer(async (req, res) => {
     if (mm) { const meta = await getMetaFull(mm[1], decodeURIComponent(mm[2])); return meta ? send(res, 200, { meta }) : send(res, 404, { error: "Not found" }); }
     if (path === "/") {
       const host = req.headers["x-forwarded-host"] || req.headers.host;
-      const cards = [...SERVICES, { id: "all", label: "All services" }].map(s => `<p><a href="/v3/${s.id}/manifest.json">Install ${s.label}</a></p>`).join("");
-      return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NXTPLAY</title><body style="font-family:system-ui;background:#101329;color:#f3f1ee;text-align:center;padding:30px"><h1>NXTPLAY</h1><p>Streaming catalogs for Stremio (${REGION}).</p>${cards}<p>Manifest: https://${host}/manifest.json</p></body>`, "text/html");
+      const cards = [...SERVICES, { id: "all", label: "All services and networks" }].map(s => `<p><a href="/v3/${s.id}/manifest.json">Install ${s.label}</a></p>`).join("");
+      return send(res, 200, `<!doctype html><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>NXTPLAY</title><body style="font-family:system-ui;background:#101329;color:#f3f1ee;text-align:center;padding:30px"><h1>NXTPLAY</h1><p>Streaming services and TV network catalogs for Stremio (${REGION}).</p>${cards}<p>Manifest: https://${host}/manifest.json</p></body>`, "text/html");
     }
     return send(res, 404, { error: "Not found" });
   } catch (e) { console.error(e); return send(res, 200, { metas: [] }, "application/json", "no-store"); }
