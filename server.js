@@ -26,7 +26,7 @@ const SERVICES = [
   { id: "amcplus", label: "AMC+", names: ["AMC+", "AMC Plus"] },
   { id: "freevee", label: "Freevee (IMDb TV)", names: ["Freevee", "Amazon Freevee", "IMDb TV"] },
   { id: "cartoonnetwork", label: "Cartoon Network", networkId: 56, types: ["series"] },
-  { id: "boomerang", label: "Boomerang", networkId: 435, types: ["series"] },
+  { id: "boomerang", label: "Boomerang", networkId: 523, types: ["series"] },
   { id: "nickjr", label: "Nick Jr.", networkId: 184, types: ["series"] },
   { id: "adultswim", label: "Adult Swim", networkId: 80, types: ["series"] }
 ];
